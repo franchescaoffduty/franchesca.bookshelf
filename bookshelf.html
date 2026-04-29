@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bookshelf — 1 Book / 7 Days</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf8f4;
+    --parchment: #f0ede6;
+    --border: #e4e0d8;
+    --ink: #1c1a17;
+    --muted: #8a8680;
+    --faint: #c8c4bc;
+    --sage-50: #f2f5f0;
+    --sage-100: #dde8d8;
+    --sage-200: #c0d4b8;
+    --sage-400: #7fa870;
+    --sage-600: #4e7a42;
+    --sage-800: #2d4d24;
+    --amber-50: #fdf6e8;
+    --amber-200: #f5d898;
+    --amber-600: #c9840a;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'Lora', Georgia, serif;
+  }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; animation: fadeUp 0.4s ease both; }
+  .screen.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  .container { max-width: 460px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 2rem 0 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.75rem;
+  }
+  .topbar-brand {
+    font-family: var(--serif); font-size: 13px; color: var(--sage-600);
+    letter-spacing: 0.04em;
+  }
+  .topbar-action {
+    background: none; border: none; font-family: var(--sans);
+    font-size: 12px; color: var(--muted); cursor: pointer; letter-spacing: 0.04em;
+    padding: 6px 12px; border-radius: 6px; transition: background 0.15s;
+  }
+  .topbar-action:hover { background: var(--parchment); }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    width: 100%; background: var(--ink); color: var(--cream);
+    border: none; border-radius: 8px; padding: 14px 0;
+    font-family: var(--sans); font-size: 14px; font-weight: 500;
+    letter-spacing: 0.03em; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { background: var(--parchment); color: var(--faint); cursor: not-allowed; }
+
+  .btn-sage {
+    width: 100%; background: var(--sage-400); color: #fff;
+    border: none; border-radius: 8px; padding: 13px 0;
+    font-family: var(--sans); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-sage:hover { opacity: 0.88; }
+
+  .btn-ghost {
+    width: 100%; background: none; border: 1px solid var(--border);
+    border-radius: 8px; padding: 11px 0; font-family: var(--sans);
+    font-size: 13px; color: var(--muted); cursor: pointer; transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--faint); color: var(--ink); }
+
+  /* ── INPUTS ── */
+  .field { margin-bottom: 24px; }
+  .field label {
+    display: block; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 7px;
+  }
+  .field input {
+    width: 100%; background: transparent; border: none;
+    border-bottom: 1px solid var(--border); padding: 10px 0;
+    font-size: 15px; color: var(--ink); outline: none;
+    font-family: var(--sans); transition: border-color 0.2s;
+  }
+  .field input:focus { border-bottom-color: var(--sage-400); }
+  .field input::placeholder { color: var(--faint); }
+  .field .hint { font-size: 12px; color: var(--faint); margin-top: 4px; }
+
+  /* ── SHELF GRID ── */
+  .shelf-header { margin-bottom: 1.5rem; }
+  .shelf-header h1 { font-family: var(--serif); font-size: 26px; font-weight: 400; color: var(--ink); }
+  .shelf-header p { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+  .shelf-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+
+  .book-card {
+    background: var(--parchment); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.1rem;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .book-card:hover { border-color: var(--sage-200); background: var(--sage-50); }
+  .book-card.completed { background: #fff; border-color: var(--border); cursor: default; }
+  .book-card.completed:hover { border-color: var(--border); background: #fff; }
+
+  .book-card-inner { display: flex; align-items: center; gap: 14px; }
+  .book-spine {
+    width: 6px; height: 52px; border-radius: 3px; flex-shrink: 0;
+    background: var(--sage-400);
+  }
+  .book-spine.done { background: var(--faint); }
+  .book-spine.amber { background: #e8a825; }
+
+  .book-meta { flex: 1; min-width: 0; }
+  .book-title {
+    font-family: var(--serif); font-size: 15px; font-weight: 500;
+    color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .book-subtitle { font-size: 12px; color: var(--muted); }
+
+  .book-right { text-align: right; flex-shrink: 0; }
+  .book-pct { font-size: 18px; font-weight: 500; color: var(--ink); }
+  .book-pct.done { color: var(--faint); }
+  .book-deadline { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .progress-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 10px; }
+  .progress-bar-fill { height: 3px; border-radius: 2px; background: var(--sage-400); transition: width 0.6s ease; }
+  .progress-bar-fill.done { background: var(--faint); }
+
+  .badge-done {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--sage-50); border: 1px solid var(--sage-100);
+    color: var(--sage-800); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; border-radius: 100px; padding: 3px 10px;
+    font-weight: 500;
+  }
+
+  .empty-shelf {
+    text-align: center; padding: 3rem 1rem;
+    border: 1px dashed var(--border); border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .empty-shelf p { font-family: var(--serif); font-size: 15px; color: var(--muted); }
+  .empty-shelf span { font-size: 28px; display: block; margin-bottom: 10px; opacity: 0.4; }
+
+  .section-label {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--faint); margin-bottom: 10px; margin-top: 1.5rem;
+  }
+
+  /* ── TRACKER ── */
+  .tracker-header { padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+  .tracker-back {
+    background: none; border: none; font-family: var(--sans); font-size: 12px;
+    color: var(--muted); cursor: pointer; padding: 0; letter-spacing: 0.04em;
+    margin-bottom: 12px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .tracker-back:hover { color: var(--ink); }
+  .tracker-title { font-family: var(--serif); font-size: 22px; font-weight: 400; color: var(--ink); line-height: 1.3; }
+  .tracker-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+  /* ── PROGRESS RING SECTION ── */
+  .ring-section {
+    display: flex; align-items: center; gap: 1.5rem;
+    padding: 1.75rem 0; border-bottom: 1px solid var(--border);
+  }
+  .ring-wrap { position: relative; flex-shrink: 0; }
+  .ring-label {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .ring-pct { font-size: 19px; font-weight: 500; color: var(--ink); line-height: 1; }
+  .ring-done-text { font-size: 9px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+
+  .ring-stats { flex: 1; }
+  .stat-row { margin-bottom: 14px; }
+  .stat-row:last-child { margin-bottom: 0; }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1px; }
+  .stat-val { font-size: 22px; font-weight: 500; color: var(--ink); }
+  .stat-val-sm { font-size: 16px; font-weight: 500; color: var(--ink); }
+
+  /* ── TODAY CARD ── */
+  .today-card {
+    padding: 1.1rem 1rem; margin: 1.25rem 0;
+    background: var(--parchment); border-radius: 10px; border: 1px solid var(--border);
+    transition: background 0.4s, border-color 0.4s;
+  }
+  .today-card.recalc { background: var(--sage-50); border-color: var(--sage-200); }
+  .today-card-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .today-target-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .today-target-pg { font-size: 28px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .today-status { font-size: 13px; }
+  .status-behind { color: #b05a2a; }
+  .status-good { color: var(--sage-600); }
+  .today-avg { text-align: right; }
+  .today-avg-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .today-avg-val { font-size: 18px; font-weight: 500; color: var(--ink); }
+
+  /* ── LOG INPUT ── */
+  .log-wrap { margin-bottom: 1rem; }
+  .log-inline { display: flex; gap: 8px; align-items: center; animation: slideIn 0.2s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
+  .log-input {
+    flex: 1; background: var(--parchment); border: 1px solid var(--sage-200);
+    border-radius: 8px; padding: 12px 14px; font-size: 15px; color: var(--ink);
+    outline: none; font-family: var(--sans); transition: border-color 0.2s;
+  }
+  .log-input:focus { border-color: var(--sage-400); }
+  .btn-save {
+    background: var(--sage-400); color: #fff; border: none; border-radius: 8px;
+    padding: 12px 18px; font-size: 14px; cursor: pointer; font-weight: 500;
+    font-family: var(--sans); flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-cancel {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; font-size: 14px; color: var(--muted); cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* ── SCHEDULE ── */
+  .schedule-list { display: flex; flex-direction: column; gap: 2px; }
+  .schedule-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 11px; border-radius: 8px; border: 1px solid transparent;
+    transition: background 0.2s;
+  }
+  .schedule-row.today-row { background: var(--sage-50); border-color: var(--sage-100); }
+  .schedule-row-left { display: flex; align-items: center; gap: 11px; }
+  .dot {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; transition: background 0.3s, border-color 0.3s;
+  }
+  .dot.pending { background: var(--parchment); border: 1px solid var(--border); color: transparent; }
+  .dot.active { background: var(--sage-100); border: 1px solid var(--sage-200); color: transparent; }
+  .dot.done { background: var(--sage-400); border: 1px solid var(--sage-400); color: #fff; }
+  .row-date { font-size: 13px; color: var(--muted); }
+  .row-date.today-label { color: var(--ink); font-weight: 500; }
+  .today-chip {
+    margin-left: 8px; font-size: 10px; background: var(--sage-100); color: var(--sage-800);
+    border-radius: 100px; padding: 2px 8px; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .row-right { text-align: right; }
+  .row-pg { font-size: 14px; font-weight: 500; }
+  .row-pg.done { color: var(--sage-600); }
+  .row-pg.upcoming { color: var(--ink); }
+  .row-delta { font-size: 11px; color: var(--faint); margin-left: 6px; }
+
+  /* ── CELEBRATION ── */
+  #screen-celebrate {
+    min-height: 100vh; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 2rem;
+  }
+  #screen-celebrate.active { display: flex; }
+  .celebrate-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: var(--sage-100); border: 2px solid var(--sage-400);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; margin: 0 auto 2rem;
+    animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .celebrate-eyebrow {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--sage-600); margin-bottom: 10px; letter-spacing: 0.04em;
+  }
+  .celebrate-title {
+    font-family: var(--serif); font-size: 28px; font-weight: 400;
+    color: var(--ink); line-height: 1.25; margin-bottom: 8px; max-width: 320px;
+  }
+  .celebrate-meta { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .celebrate-badge {
+    display: inline-block; background: var(--sage-50); border: 1px solid var(--sage-200);
+    border-radius: 100px; padding: 6px 20px; font-size: 11px; color: var(--sage-800);
+    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 2rem;
+  }
+  .celebrate-timeline {
+    background: var(--parchment); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.25rem; margin-bottom: 2rem; max-width: 320px; width: 100%; text-align: left;
+  }
+  .timeline-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .timeline-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+  .timeline-row span:first-child { color: var(--muted); }
+  .timeline-row span:last-child { font-weight: 500; color: var(--ink); }
+  .celebrate-btns { display: flex; flex-direction: column; gap: 10px; max-width: 320px; width: 100%; }
+
+  /* ── HISTORY TIMELINE (on shelf) ── */
+  .history-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--faint);
+    flex-shrink: 0; margin-top: 6px;
+  }
+  .history-title { font-family: var(--serif); font-size: 14px; color: var(--ink); }
+  .history-meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .history-badge-sm {
+    display: inline-block; background: var(--sage-50); border: 1px solid var(--sage-100);
+    color: var(--sage-800); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+    border-radius: 100px; padding: 2px 8px; margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ SHELF SCREEN ══════════ -->
+<div id="screen-shelf" class="screen active">
+  <div class="container">
+    <div class="topbar">
+      <span class="topbar-brand">✦ Bookshelf</span>
+      <button class="topbar-action" onclick="showScreen('add')">+ Add book</button>
+    </div>
+    <div class="shelf-header">
+      <h1>Your books</h1>
+      <p id="shelf-subtitle">Track your reading, one week at a time.</p>
+    </div>
+
+    <div id="active-section">
+      <div class="section-label">Currently reading</div>
+      <div class="shelf-grid" id="active-books-list"></div>
+    </div>
+
+    <div id="completed-section" style="display:none">
+      <div class="section-label">Reading history</div>
+      <div id="completed-books-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ADD BOOK SCREEN ══════════ -->
+<div id="screen-add" class="screen">
+  <div class="container">
+    <div class="topbar">
+      <span class="topbar-brand">✦ New Book</span>
+      <button class="topbar-action" onclick="showScreen('shelf')">← Back</button>
+    </div>
+    <h2 style="font-family: var(--serif); font-size: 24px; font-weight: 400; margin-bottom: 2rem; line-height: 1.3;">
+      What are you<br />reading?
+    </h2>
+    <div class="field">
+      <label>Book title</label>
+      <input type="text" id="add-title" placeholder="e.g. Middlemarch" />
+    </div>
+    <div class="field">
+      <label>Total pages</label>
+      <input type="number" id="add-pages" placeholder="e.g. 432" min="1" />
+    </div>
+    <div class="field">
+      <label>Current page</label>
+      <input type="number" id="add-current" placeholder="0" min="0" />
+      <div class="hint">Leave blank if starting fresh</div>
+    </div>
+    <div class="field">
+      <label>Deadline</label>
+      <input type="date" id="add-deadline" />
+      <div class="hint">Defaults to next Sunday</div>
+    </div>
+    <div style="margin-top: 2rem;">
+      <button class="btn-primary" onclick="addBook()">Begin challenge →</button>
+    </div>
+    <p style="font-size: 12px; color: var(--muted); margin-top: 14px; line-height: 1.6;" id="add-deadline-display"></p>
+  </div>
+</div>
+
+<!-- ══════════ TRACKER SCREEN ══════════ -->
+<div id="screen-tracker" class="screen">
+  <div class="container">
+    <div class="tracker-header">
+      <button class="tracker-back" onclick="showScreen('shelf')">← All books</button>
+      <div class="tracker-title" id="tracker-title">—</div>
+      <div class="tracker-sub" id="tracker-sub">—</div>
+    </div>
+
+    <!-- Progress ring -->
+    <div class="ring-section">
+      <div class="ring-wrap">
+        <svg id="ring-svg" width="110" height="110" style="transform: rotate(-90deg); display: block;">
+          <circle id="ring-bg" cx="55" cy="55" r="46" fill="none" stroke-width="9" />
+          <circle id="ring-fill" cx="55" cy="55" r="46" fill="none" stroke-width="9"
+            stroke-dasharray="0 289" stroke-linecap="round"
+            style="transition: stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1);" />
+        </svg>
+        <div class="ring-label">
+          <div class="ring-pct" id="ring-pct">0%</div>
+          <div class="ring-done-text">done</div>
+        </div>
+      </div>
+      <div class="ring-stats">
+        <div class="stat-row">
+          <div class="stat-label">Current page</div>
+          <div class="stat-val" id="stat-current">—</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-label">Pages left</div>
+          <div class="stat-val-sm" id="stat-left">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today card -->
+    <div class="today-card" id="today-card">
+      <div class="today-card-row">
+        <div>
+          <div class="today-target-label">Tonight's target</div>
+          <div class="today-target-pg" id="today-target">—</div>
+          <div class="today-status" id="today-status">—</div>
+        </div>
+        <div class="today-avg">
+          <div class="today-avg-label">Avg / day</div>
+          <div class="today-avg-val" id="today-avg">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-wrap" id="log-wrap">
+      <button class="btn-sage" id="log-btn" onclick="toggleLog(true)">Log current page</button>
+      <div class="log-inline" id="log-inline" style="display:none;">
+        <input class="log-input" type="number" id="log-input" placeholder="Enter page number"
+          onkeydown="if(event.key==='Enter') saveLog(); if(event.key==='Escape') toggleLog(false)" />
+        <button class="btn-save" onclick="saveLog()">Save</button>
+        <button class="btn-cancel" onclick="toggleLog(false)">✕</button>
+      </div>
+    </div>
+
+    <!-- Recalc -->
+    <div id="recalc-wrap" style="margin-bottom: 1rem; display: none;">
+      <button class="btn-ghost" onclick="recalculate()">Change deadline ↻</button>
+    </div>
+
+    <!-- Schedule -->
+    <div class="section-label" style="margin-top: 1.25rem;">Your schedule</div>
+    <div class="schedule-list" id="schedule-list"></div>
+
+    <!-- Deadline picker -->
+    <div id="deadline-picker-wrap" style="display:none; margin-bottom:1rem;">
+      <div style="background:var(--parchment); border:1px solid var(--border); border-radius:8px; padding:1rem 1.1rem;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;">New deadline</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="date" id="deadline-input" style="flex:1;background:#fff;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:14px;color:var(--ink);font-family:var(--sans);outline:none;" />
+          <button onclick="applyNewDeadline()" style="background:var(--ink);color:var(--cream);border:none;border-radius:7px;padding:9px 16px;font-size:13px;font-family:var(--sans);font-weight:500;cursor:pointer;white-space:nowrap;">Apply</button>
+          <button onclick="document.getElementById('deadline-picker-wrap').style.display='none'" style="background:none;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:13px;color:var(--muted);cursor:pointer;">✕</button>
+        </div>
+        <div id="deadline-error" style="display:none;font-size:12px;color:#b05a2a;margin-top:6px;">Deadline can't be in the past.</div>
+      </div>
+    </div>
+
+    <!-- Delete -->
+    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+      <button class="btn-ghost" onclick="deleteBook()" style="color: #b05a2a; border-color: #e8c8b8;">
+        Remove this book
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CELEBRATE SCREEN ══════════ -->
+<div id="screen-celebrate" class="screen">
+  <div style="max-width: 400px; margin: 0 auto; padding: 0 1.5rem; display: flex; flex-direction: column; align-items: center; min-height: 100vh; justify-content: center;">
+    <div class="celebrate-icon">✦</div>
+    <div class="celebrate-eyebrow">Challenge complete</div>
+    <div class="celebrate-title" id="cel-title">—</div>
+    <div class="celebrate-meta" id="cel-meta">—</div>
+    <div class="celebrate-badge">Weekly reader</div>
+    <div class="celebrate-timeline" id="cel-timeline"></div>
+    <div class="celebrate-btns">
+      <button class="btn-primary" onclick="showScreen('add')">Start next book</button>
+      <button class="btn-ghost" onclick="showScreen('shelf')">Back to shelf</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'bookshelf_v3';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { books: [] }; }
+  catch { return { books: [] }; }
+}
+function save(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+function getData() { return load(); }
+
+// ── UTILS ──
+function getNextSunday() {
+  const d = new Date();
+  const day = d.getDay();
+  const daysUntil = day === 0 ? 14 : (7 - day) + 7;
+  const s = new Date(d);
+  s.setDate(d.getDate() + daysUntil);
+  s.setHours(23, 59, 59, 999);
+  return s;
+}
+function todayStart() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function fmtDateShort(d) {
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function buildSchedule(startPage, totalPages, startDate, endDate) {
+  const start = new Date(startDate); start.setHours(0,0,0,0);
+  const end = new Date(endDate); end.setHours(0,0,0,0);
+  const diffMs = end - start;
+  const totalDays = Math.max(1, Math.round(diffMs / 86400000) + 1);
+  const pagesLeft = totalPages - startPage;
+  const schedule = [];
+  for (let i = 0; i < totalDays; i++) {
+    const dayDate = new Date(start);
+    dayDate.setDate(start.getDate() + i);
+    const targetPage = Math.round(startPage + ((i + 1) / totalDays) * pagesLeft);
+    schedule.push({ day: i + 1, date: dayDate.toISOString(), targetPage: Math.min(targetPage, totalPages) });
+  }
+  return schedule;
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// ── SCREEN MANAGEMENT ──
+let currentBookId = null;
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  el.classList.add('active');
+  if (name === 'shelf') renderShelf();
+  if (name === 'add') initAddForm();
+  if (name === 'tracker' && currentBookId) renderTracker(currentBookId);
+}
+
+// ── SHELF ──
+function renderShelf() {
+  const data = getData();
+  const active = data.books.filter(b => !b.completed);
+  const completed = data.books.filter(b => b.completed);
+
+  const activeList = document.getElementById('active-books-list');
+  const completedList = document.getElementById('completed-books-list');
+  const completedSection = document.getElementById('completed-section');
+  const sub = document.getElementById('shelf-subtitle');
+
+  sub.textContent = data.books.length === 0
+    ? 'Your reading challenge starts here.'
+    : `${active.length} active · ${completed.length} completed`;
+
+  // Active books
+  if (active.length === 0) {
+    activeList.innerHTML = `<div class="empty-shelf"><span>📚</span><p>No active books yet.<br>Add one to get started.</p></div>`;
+  } else {
+    activeList.innerHTML = active.map(book => {
+      const pct = Math.round((book.currentPage / book.totalPages) * 100);
+      const deadline = fmtDateShort(book.deadline);
+      const today = todayStart();
+      const schedule = buildSchedule(book.currentPage, book.totalPages, today, new Date(book.deadline));
+      const todayTarget = schedule[0]?.targetPage ?? book.totalPages;
+      const behind = todayTarget - book.currentPage;
+      const spineClass = behind > 10 ? 'amber' : '';
+      return `
+        <div class="book-card" onclick="openBook('${book.id}')">
+          <div class="book-card-inner">
+            <div class="book-spine ${spineClass}"></div>
+            <div class="book-meta">
+              <div class="book-title">${book.title}</div>
+              <div class="book-subtitle">pg ${book.currentPage} of ${book.totalPages} · ends ${deadline}</div>
+            </div>
+            <div class="book-right">
+              <div class="book-pct">${pct}%</div>
+              <div class="book-deadline">${behind > 0 ? `<span style="color:#b05a2a">${behind} behind</span>` : '✦ on track'}</div>
+            </div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Completed history
+  if (completed.length === 0) {
+    completedSection.style.display = 'none';
+  } else {
+    completedSection.style.display = 'block';
+    completedList.innerHTML = completed.map(book => {
+      const completedDate = book.completedDate ? fmtDateShort(book.completedDate) : '—';
+      const days = book.daysToComplete ?? '7';
+      return `
+        <div class="history-item">
+          <div class="history-dot"></div>
+          <div>
+            <div class="history-title">${book.title}</div>
+            <div class="history-meta">${book.totalPages} pages · finished ${completedDate} · ${days} days</div>
+            <div class="history-badge-sm">✦ Weekly reader</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+}
+
+// ── ADD BOOK ──
+function initAddForm() {
+  document.getElementById('add-title').value = '';
+  document.getElementById('add-pages').value = '';
+  document.getElementById('add-current').value = '';
+  const nextSun = getNextSunday();
+  const iso = nextSun.toISOString().split('T')[0];
+  document.getElementById('add-deadline').value = iso;
+  document.getElementById('add-deadline-display').textContent =
+    'Default deadline: ' + nextSun.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  document.getElementById('add-title').focus();
+}
+function addBook() {
+  const title = document.getElementById('add-title').value.trim();
+  const total = parseInt(document.getElementById('add-pages').value);
+  const current = parseInt(document.getElementById('add-current').value) || 0;
+  const deadlineVal = document.getElementById('add-deadline').value;
+  if (!title || isNaN(total) || total < 1) return alert('Please fill in title and total pages.');
+  const deadline = deadlineVal ? new Date(deadlineVal + 'T23:59:59') : getNextSunday();
+  const data = getData();
+  const book = {
+    id: genId(), title, totalPages: total,
+    startPage: Math.min(current, total - 1),
+    currentPage: Math.min(current, total - 1),
+    deadline: deadline.toISOString(),
+    createdAt: new Date().toISOString(),
+    completed: false,
+  };
+  data.books.unshift(book);
+  save(data);
+  openBook(book.id);
+}
+
+// ── OPEN BOOK ──
+function openBook(id) {
+  currentBookId = id;
+  showScreen('tracker');
+}
+
+// ── SCHEDULE HELPERS ──
+// Ensures book has a stored fixed schedule. Rebuilds only when explicitly asked.
+function ensureSchedule(book) {
+  const today = todayStart();
+  const todayISO = today.toISOString().split('T')[0];
+
+  // Build fresh schedule if none exists
+  if (!book.schedule || book.schedule.length === 0) {
+    book.schedule = buildSchedule(book.currentPage, book.totalPages, today, new Date(book.deadline));
+    book.scheduleBuiltOn = todayISO;
+    return;
+  }
+
+  // Check if yesterday's target was missed — factor it into today
+  const firstEntry = book.schedule[0];
+  const firstEntryDate = new Date(firstEntry.date);
+  firstEntryDate.setHours(0,0,0,0);
+  const firstISO = firstEntryDate.toISOString().split('T')[0];
+
+  if (firstISO < todayISO) {
+    // Yesterday (or earlier) has passed — drop past days, absorb missed pages into today
+    const remaining = book.schedule.filter(e => {
+      const d = new Date(e.date); d.setHours(0,0,0,0);
+      return d.toISOString().split('T')[0] >= todayISO;
+    });
+    if (remaining.length === 0) {
+      // Past deadline — rebuild from today with 1-day schedule
+      book.schedule = buildSchedule(book.currentPage, book.totalPages, today, new Date(book.deadline));
+    } else {
+      // Redistribute: keep future days' dates, recalculate targets from current page
+      book.schedule = buildSchedule(book.currentPage, book.totalPages, today, new Date(book.deadline));
+    }
+    book.scheduleBuiltOn = todayISO;
+  }
+}
+
+function getTodayTarget(book) {
+  if (!book.schedule || book.schedule.length === 0) return book.totalPages;
+  return book.schedule[0].targetPage;
+}
+
+// ── TRACKER ──
+function renderTracker(id) {
+  const data = getData();
+  const book = data.books.find(b => b.id === id);
+  if (!book) return showScreen('shelf');
+
+  ensureSchedule(book);
+  save(data); // persist any schedule updates
+
+  document.getElementById('tracker-title').textContent = book.title;
+  document.getElementById('tracker-sub').textContent =
+    `${book.totalPages} pages · ends ${fmtDate(book.deadline)}`;
+
+  const pct = Math.min(100, Math.round((book.currentPage / book.totalPages) * 100));
+  const r = 46, circ = 2 * Math.PI * r;
+  const filled = circ * pct / 100;
+
+  document.getElementById('ring-bg').style.stroke = '#f0ede6';
+  const ringFill = document.getElementById('ring-fill');
+  ringFill.style.stroke = '#7fa870';
+  ringFill.setAttribute('stroke-dasharray', `${filled} ${circ}`);
+  document.getElementById('ring-pct').textContent = pct + '%';
+  document.getElementById('stat-current').textContent = book.currentPage;
+  document.getElementById('stat-left').textContent = book.totalPages - book.currentPage;
+
+  const schedule = book.schedule;
+  const todayEntry = schedule[0];
+
+  if (todayEntry) {
+    document.getElementById('today-target').textContent = 'Page ' + todayEntry.targetPage;
+    const behind = todayEntry.targetPage - book.currentPage;
+    const statusEl = document.getElementById('today-status');
+    if (behind > 0) {
+      statusEl.className = 'today-status status-behind';
+      statusEl.textContent = `${behind} pages to go tonight`;
+    } else {
+      statusEl.className = 'today-status status-good';
+      statusEl.textContent = 'Tonight\'s target hit ✦';
+    }
+    const daysLeft = schedule.length;
+    const pagesLeft = book.totalPages - book.currentPage;
+    document.getElementById('today-avg').textContent = daysLeft > 0 ? Math.ceil(pagesLeft / daysLeft) : 0;
+    // Always show recalculate (for deadline changes)
+    document.getElementById('recalc-wrap').style.display = 'block';
+  }
+
+  // Schedule list — use stored schedule, not a live rebuild
+  const list = document.getElementById('schedule-list');
+  list.innerHTML = schedule.map((entry, i) => {
+    const isToday = i === 0;
+    const isDone = book.currentPage >= entry.targetPage;
+    const dotClass = isDone ? 'done' : isToday ? 'active' : 'pending';
+    const pgClass = isDone ? 'done' : 'upcoming';
+    const delta = i > 0 ? entry.targetPage - schedule[i-1].targetPage : entry.targetPage - book.startPage;
+    return `
+      <div class="schedule-row ${isToday ? 'today-row' : ''}">
+        <div class="schedule-row-left">
+          <div class="dot ${dotClass}">${isDone ? '✓' : ''}</div>
+          <span class="row-date ${isToday ? 'today-label' : ''}">
+            ${fmtDate(entry.date)}${isToday ? '<span class="today-chip">Today</span>' : ''}
+          </span>
+        </div>
+        <div class="row-right">
+          <span class="row-pg ${pgClass}">pg ${entry.targetPage}</span>
+          ${i > 0 ? `<span class="row-delta">+${delta}</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleLog(show) {
+  document.getElementById('log-btn').style.display = show ? 'none' : 'block';
+  document.getElementById('log-inline').style.display = show ? 'flex' : 'none';
+  if (show) setTimeout(() => document.getElementById('log-input').focus(), 40);
+  else document.getElementById('log-input').value = '';
+}
+
+function saveLog() {
+  const val = parseInt(document.getElementById('log-input').value);
+  if (isNaN(val) || val < 0) return;
+  const data = getData();
+  const book = data.books.find(b => b.id === currentBookId);
+  if (!book) return;
+  const newPage = Math.min(val, book.totalPages);
+
+  // Completion check
+  if (newPage >= book.totalPages) {
+    book.currentPage = newPage;
+    book.completed = true;
+    book.completedDate = new Date().toISOString();
+    const created = new Date(book.createdAt);
+    book.daysToComplete = Math.max(1, Math.round((new Date() - created) / 86400000));
+    save(data);
+    toggleLog(false);
+    showCelebrate(book);
+    return;
+  }
+
+  const todayTarget = getTodayTarget(book);
+
+  if (newPage >= todayTarget) {
+    // ✦ Passed tonight's target — keep today's entry as-is, redistribute future days only
+    book.currentPage = newPage;
+    const schedule = book.schedule || [];
+    if (schedule.length > 1) {
+      // Keep today's entry unchanged, rebuild only days after today
+      const todayEntry = schedule[0];
+      const tomorrow = new Date(todayStart()); tomorrow.setDate(tomorrow.getDate() + 1);
+      const futureDays = buildSchedule(newPage, book.totalPages, tomorrow, new Date(book.deadline));
+      book.schedule = [todayEntry, ...futureDays];
+    }
+    // If schedule has only today, nothing to redistribute — just update currentPage
+  } else {
+    // ✦ Below tonight's target — just update current page, freeze the schedule completely
+    book.currentPage = newPage;
+  }
+
+  save(data);
+  toggleLog(false);
+  renderTracker(currentBookId);
+}
+
+function recalculate() {
+  const data = getData();
+  const book = data.books.find(b => b.id === currentBookId);
+  if (!book) return;
+  // Toggle the inline deadline picker
+  const wrap = document.getElementById('deadline-picker-wrap');
+  const isOpen = wrap.style.display !== 'none';
+  if (isOpen) { wrap.style.display = 'none'; return; }
+  // Pre-fill with current deadline
+  const iso = new Date(book.deadline).toISOString().split('T')[0];
+  document.getElementById('deadline-input').value = iso;
+  wrap.style.display = 'block';
+}
+
+function applyNewDeadline() {
+  const data = getData();
+  const book = data.books.find(b => b.id === currentBookId);
+  if (!book) return;
+  const val = document.getElementById('deadline-input').value;
+  if (!val) return;
+  const newDeadline = new Date(val + 'T23:59:59');
+  if (isNaN(newDeadline.getTime())) return;
+  const today = todayStart();
+  if (newDeadline < today) { document.getElementById('deadline-error').style.display = 'block'; return; }
+  document.getElementById('deadline-error').style.display = 'none';
+
+  // Keep today's schedule entry, rebuild future from tomorrow with new deadline
+  const schedule = book.schedule || [];
+  book.deadline = newDeadline.toISOString();
+  if (schedule.length > 0) {
+    const todayEntry = schedule[0];
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const futureDays = buildSchedule(book.currentPage, book.totalPages, tomorrow, newDeadline);
+    book.schedule = [todayEntry, ...futureDays];
+  } else {
+    book.schedule = buildSchedule(book.currentPage, book.totalPages, today, newDeadline);
+  }
+
+  save(data);
+  document.getElementById('deadline-picker-wrap').style.display = 'none';
+  renderTracker(currentBookId);
+  const card = document.getElementById('today-card');
+  card.classList.add('recalc');
+  setTimeout(() => card.classList.remove('recalc'), 1200);
+}
+
+function deleteBook() {
+  if (!confirm('Remove this book from your shelf?')) return;
+  const data = getData();
+  data.books = data.books.filter(b => b.id !== currentBookId);
+  save(data);
+  currentBookId = null;
+  showScreen('shelf');
+}
+
+// ── CELEBRATE ──
+function showCelebrate(book) {
+  document.getElementById('cel-title').textContent = book.title;
+  document.getElementById('cel-meta').textContent =
+    `${book.totalPages} pages · ${book.daysToComplete ?? 7} days`;
+  document.getElementById('cel-timeline').innerHTML = `
+    <div class="timeline-label">Reading stats</div>
+    <div class="timeline-row"><span>Total pages</span><span>${book.totalPages}</span></div>
+    <div class="timeline-row"><span>Avg per day</span><span>${Math.ceil(book.totalPages / (book.daysToComplete ?? 7))}</span></div>
+    <div class="timeline-row"><span>Completed</span><span>${fmtDateShort(book.completedDate)}</span></div>
+    <div class="timeline-row"><span>Days taken</span><span>${book.daysToComplete ?? 7}</span></div>
+  `;
+  showScreen('celebrate');
+}
+
+// ── INIT ──
+renderShelf();
+</script>
+</body>
+</html>
